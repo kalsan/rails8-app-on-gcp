@@ -17,4 +17,42 @@ class PostTest < ActiveSupport::TestCase
       post.save!
     end
   end
+
+  # --- semantic search (Step 8, Quest 3) --------------------------------------
+
+  test "semantic search is not available on SQLite" do
+    assert_not Post.semantic_search_available?
+  end
+
+  test "without pgvector no embedding job is enqueued" do
+    assert_no_enqueued_jobs(only: EmbedPostJob) do
+      Post.create!(title: "Local only", body: "SQLite has no vector column.")
+    end
+  end
+
+  test "with pgvector a new post is embedded" do
+    stub_singleton(Post, :semantic_search_available?, true) do
+      assert_enqueued_with(job: EmbedPostJob) do
+        Post.create!(title: "Semantic", body: "Embed me, please.")
+      end
+    end
+  end
+
+  test "with pgvector a changed title is embedded again" do
+    post = posts(:one)
+    stub_singleton(Post, :semantic_search_available?, true) do
+      assert_enqueued_with(job: EmbedPostJob, args: [ post.id ]) do
+        post.update!(title: "A brand new title")
+      end
+    end
+  end
+
+  test "with pgvector a touch (cover attached, comment added) is not embedded again" do
+    post = posts(:one)
+    stub_singleton(Post, :semantic_search_available?, true) do
+      assert_no_enqueued_jobs(only: EmbedPostJob) do
+        post.touch
+      end
+    end
+  end
 end

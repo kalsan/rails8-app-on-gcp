@@ -17,6 +17,27 @@ class PostsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "search falls back to title keywords without pgvector" do
+    sign_out
+    get posts_url(q: "second")
+    assert_response :success
+    assert_select "td a", text: "My Second Test Post"
+    assert_select "td a", text: "My First Test Post", count: 0
+    assert_select ".search-summary", /keyword/i
+  end
+
+  test "search uses vector similarity when pgvector is available" do
+    sign_out
+    sent = nil
+    stub_singleton(Post, :semantic_search_available?, true) do
+      stub_singleton(Embeddings, :embed, ->(text, task:) { sent = [ text, task ]; nil }) do
+        get posts_url(q: "jobs without Redis")
+      end
+    end
+    assert_response :success
+    assert_equal [ "jobs without Redis", :query ], sent
+  end
+
   test "should get show without authentication" do
     sign_out
     get post_url(@post)

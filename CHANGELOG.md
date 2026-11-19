@@ -1,6 +1,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- 🧭 **Semantic search over posts with pgvector (Step 8, Quest 3)**: the posts index gains a search field that finds posts by meaning, not by words ("italian food" finds the pizza post). Each post is embedded in the worker by `EmbedPostJob` with `gemini-embedding-001` on Vertex AI (`blog/lib/embeddings.rb`: keyless ADC, regional `europe-west1` endpoint so post content stays in the EU, never raises) and stored in the new `posts.embedding vector(768)` column (`neighbor` gem). A search query is embedded with the `RETRIEVAL_QUERY` task type and ranked by cosine distance; the table shows the similarity. Posts are embedded again only when title or body change, so attaching a cover or adding a comment costs no extra call. Without pgvector or credentials (local SQLite, tests) the search falls back to a title search. The migration is idempotent and does nothing on SQLite.
 
 ## [0.3.22] - 2026-11-19
 ### Changed

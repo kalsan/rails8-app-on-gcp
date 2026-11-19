@@ -3,6 +3,23 @@
 
 <h1>Posts</h1>
 
+<%= form_with url: posts_path, method: :get, class: "posts-search" do |f| %>
+  <%= f.search_field :q, value: @query, placeholder: "Search by meaning, e.g. “jobs without Redis”", "aria-label": "Search posts" %>
+  <%= f.submit "Search", name: nil %>
+<% end %>
+
+<% if @query %>
+  <p class="search-summary">
+    <% if @search_mode == :semantic %>
+      🧭 Semantic search: the <%= pluralize(@posts.size, "post") %> closest in meaning to “<%= @query %>”
+      (pgvector cosine distance, <%= Embeddings::MODEL %> on Vertex AI).
+    <% else %>
+      🔤 Keyword search on titles for “<%= @query %>”: semantic search needs Cloud SQL with pgvector and Vertex AI.
+    <% end %>
+    <%= link_to "Show all posts", posts_path %>
+  </p>
+<% end %>
+
 <table>
   <thead>
     <tr>
@@ -11,6 +28,7 @@
       <th>🖼️ Images</th>
       <th>💬 Comments</th>
       <th>Updated at</th>
+      <% if @search_mode == :semantic %><th title="1 − cosine distance: 1 means same meaning">🧭 Similarity</th><% end %>
     </tr>
   </thead>
   <tbody>
@@ -34,6 +52,7 @@
         <td style="text-align: center;"><%= post.comments.size %></td>
         <% days_ago = (Date.today - post.updated_at.to_date).to_i %>
         <td><%= case days_ago when 0 then 'today' when 1 then 'yesterday' when 2..7 then "#{days_ago}d ago" else post.updated_at.year == Date.today.year ? post.updated_at.strftime('%-d %b') : post.updated_at.strftime('%-d %b %Y') end %></td>
+        <% if @search_mode == :semantic %><td style="text-align: center;"><%= number_with_precision(1 - post.neighbor_distance, precision: 2) %></td><% end %>
       </tr>
     <% end %>
   </tbody>

@@ -72,3 +72,7 @@ gem "google-cloud-storage", "~> 1.62"
 gem "dotenv-rails", "~> 3.2", groups: [:development, :test]
 
 gem "archspec", "~> 1.0"
+
+# pgvector support for Active Record: vector column type and nearest_neighbors
+# queries (Step 8, Quest 3: semantic search). Embeddings come from lib/embeddings.rb.
+gem "neighbor", "~> 1.2"
